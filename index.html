@@ -1,0 +1,718 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Cat Qubit Playground</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column; each experiment is a lab bench — stage on the left, controls on the right, stacked on phones.
+   Colour carries meaning: teal = valley 0, plum = valley 1, orange = the phase-flip side of the story. */
+:root{
+  --bg:#f1f4f8; --surface:#ffffff; --stage:#fafbfd; --ink:#131b2a; --muted:#566275; --line:#d2d9e4;
+  --zero:#0d8577; --one:#b23a92; --accent:#2c49d8; --neg:#d2601f; --on-accent:#ffffff; --soft:#e6ebf3;
+  --font-display:"Fraunces","Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --font-body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e131b; --surface:#161d28; --stage:#111822; --ink:#e7ecf3; --muted:#9aa7b8; --line:#2b3545;
+  --zero:#3ecdbb; --one:#ea7fcd; --accent:#8fa3ff; --neg:#ff9a5c; --on-accent:#0e131b; --soft:#1e2734; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0e131b; --surface:#161d28; --stage:#111822; --ink:#e7ecf3; --muted:#9aa7b8; --line:#2b3545;
+  --zero:#3ecdbb; --one:#ea7fcd; --accent:#8fa3ff; --neg:#ff9a5c; --on-accent:#0e131b; --soft:#1e2734; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1060px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0;line-height:1.3}
+h1{font-size:clamp(2.2rem,6vw,3.4rem);font-weight:900;letter-spacing:-.01em}
+h2{font-size:clamp(1.4rem,3.4vw,1.85rem);font-weight:900}
+h2 .no{font-family:var(--font-mono);font-weight:600;font-size:.72em;color:var(--muted);margin-right:.6em;letter-spacing:.04em}
+h3{font-size:1.05rem;font-weight:600}
+p{margin:0}
+a{color:var(--accent)}
+.prose{max-width:40rem;display:flex;flex-direction:column;gap:12px}
+.muted{color:var(--muted)}
+.small{font-size:.86rem;line-height:1.65}
+.m{font-family:"STIX Two Text","Cambria Math","Times New Roman",serif;font-style:italic;white-space:nowrap}
+.m sup{font-style:normal;font-size:.7em}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.k0{color:var(--zero);font-weight:600}.k1{color:var(--one);font-weight:600}.kn{color:var(--neg);font-weight:600}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:end;padding-top:12px}
+.hero .eyebrow{font-family:var(--font-mono);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.hero .lead{font-size:1.1rem;max-width:36rem;margin-top:14px}
+.hero canvas{width:230px;height:120px;display:block}
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.toc a{font-size:.88rem;text-decoration:none;color:var(--ink);border:1px solid var(--line);padding:4px 12px;border-radius:999px;background:var(--surface)}
+.toc a:hover{border-color:var(--accent);color:var(--accent)}
+.howto{border-left:3px solid var(--line);padding-left:16px}
+
+/* bench */
+section{display:flex;flex-direction:column;gap:20px;scroll-margin-top:16px}
+.bench{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px;align-items:start}
+.stage{background:var(--stage);border:1px solid var(--line);border-radius:14px;overflow:hidden;position:relative}
+.stage canvas{display:block;width:100%;aspect-ratio:4/3;max-width:100%;touch-action:manipulation}
+.stage .cap{position:absolute;left:12px;bottom:8px;font-size:.74rem;color:var(--muted);pointer-events:none}
+.panel{display:flex;flex-direction:column;gap:16px;min-width:0}
+.steps{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:4px;font-size:.95rem;line-height:1.65}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:.86rem;color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.field label b{color:var(--ink);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--accent);margin:0;height:28px}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;font-size:.92rem;line-height:1.3;padding:9px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+button.link{border:0;background:none;padding:2px 0;color:var(--accent);text-decoration:underline;text-underline-offset:3px;font-size:.86rem}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg.two{grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,1fr))}
+.seg button{border:0;border-radius:0;background:none;padding:9px 6px;font-size:.88rem}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--on-accent);font-weight:600}
+.status{font-size:.95rem;line-height:1.65;min-height:3.3em;padding:10px 12px;border-radius:10px;background:var(--soft)}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tile{border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--surface);min-width:0}
+.tile .lab{font-size:.76rem;color:var(--muted);line-height:1.4}
+.tile .val{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:1.25rem;font-weight:600;line-height:1.4}
+.take{max-width:42rem;border-top:2px solid var(--ink);padding-top:12px;display:flex;flex-direction:column;gap:8px}
+.take .tag{font-family:var(--font-mono);font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+details{max-width:42rem;font-size:.9rem;color:var(--muted)}
+details summary{cursor:pointer;color:var(--ink)}
+.duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.duo .stage canvas{aspect-ratio:1/1}
+.duo figcaption{font-size:.78rem;color:var(--muted);padding:6px 10px 8px;line-height:1.5}
+figure{margin:0}
+.chart canvas{aspect-ratio:16/10}
+.legend{display:flex;flex-wrap:wrap;gap:2px 16px;font-size:.78rem;color:var(--muted);padding:6px 12px 10px;line-height:1.5}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+h3.sub{font-size:1.2rem;margin-top:16px}
+ul.sum{margin:0;padding-left:1.2em;max-width:40rem;display:flex;flex-direction:column;gap:6px}
+
+/* notes reader */
+.reader{display:flex;flex-direction:column;gap:12px;max-width:760px}
+.reader .page{background:#ffffff;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.reader img{display:block;width:100%;height:auto;aspect-ratio:210/297}
+.reader .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.refs{margin:0;padding-left:1.2em;font-size:.88rem;line-height:1.7;color:var(--muted);max-width:46rem}
+footer{font-size:.82rem;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+
+@media (max-width:780px){
+  body{font-size:16px}
+  .wrap{gap:44px}
+  .hero{grid-template-columns:1fr}
+  .hero canvas{width:180px;height:94px}
+  .bench{grid-template-columns:1fr}
+  h2 .no{display:block;margin:0 0 2px}
+}
+</style>
+
+<div class="wrap">
+
+<header class="hero">
+  <div>
+    <div class="eyebrow">Interactive intro · about 7 minutes</div>
+    <h1>Cat Qubit Playground</h1>
+    <p class="lead">Quantum computers are fragile: errors are their worst enemy. The cat qubit’s trick is to store information in two “valleys”, so that one of the two kinds of error almost never happens. Forget the formulas for now. Play with a few small experiments and you will see how it works.</p>
+    <nav class="toc" aria-label="Contents">
+      <a href="#exp1">1 Two valleys</a><a href="#exp2">2 Kick it</a><a href="#exp3">3 Lose a photon</a><a href="#exp4">4 Cost and payoff</a><a href="#exp5">5 A code on top</a><a href="#notes">Notes</a>
+    </nav>
+  </div>
+  <canvas id="mark" width="230" height="120" role="img" aria-label="A figure-eight curve with one dot in each loop, labelled 0 and 1"></canvas>
+</header>
+
+<div class="prose howto">
+  <h3>How to read the pictures below</h3>
+  <p>The light in a microwave cavity can be drawn as a point on a plane. The farther the point is from the centre, the more photons are in the cavity; the angle of the point around the centre is the phase of the oscillation. Physicists call this picture <b>phase space</b>.</p>
+</div>
+
+<!-- ───────── Experiment 1 ───────── -->
+<section id="exp1">
+  <h2><span class="no">Experiment 1</span>One valley, or two</h2>
+  <div class="prose"><p>Light leaks out of the cavity, and we can also pump light in. What matters is how many photons are exchanged at a time. The arrows on the map show the direction of the “flow”; the closer the contour lines, the steeper the slope.</p></div>
+  <div class="bench">
+    <div class="stage"><canvas id="cv1" role="img" aria-label="Phase-space landscape: points follow the arrows down to the bottom of a valley"></canvas><span class="cap">Click the map to drop a point</span></div>
+    <div class="panel">
+      <ol class="steps">
+        <li>Press “Scatter points” and watch where they flow.</li>
+        <li>Switch to “1 pair at a time” and see where the points go this time.</li>
+        <li>Drag the slider to pull the two valleys apart.</li>
+      </ol>
+      <div class="seg" role="group" aria-label="Photons exchanged at a time">
+        <button id="m1" aria-pressed="true">1 photon at a time</button>
+        <button id="m2" aria-pressed="false">1 pair at a time</button>
+      </div>
+      <div class="field">
+        <label for="a1"><span>Cat size <span class="m">α</span></span><b id="a1v"></b></label>
+        <input type="range" id="a1" min="1" max="2.4" step="0.05" value="1.8">
+      </div>
+      <div class="row">
+        <button class="primary" id="scatter1">Scatter points</button>
+        <button id="clear1">Clear</button>
+      </div>
+      <div class="status" id="st1" aria-live="polite"></div>
+      <button class="link" id="egg">Bonus: what about 3 or 4 at a time?</button>
+    </div>
+  </div>
+  <div class="take">
+    <span class="tag">What you saw</span>
+    <p>Exchanging one photon at a time gives a single stable point. Wherever a point starts, it ends up in the same place, and the original information is washed out.</p>
+    <p>Exchanging photons in pairs gives two stable points: <span class="k0">+α</span> on the right and <span class="k1">−α</span> on the left. Call one <span class="k0">0</span> and the other <span class="k1">1</span>, and you have exactly one bit. This engineered process is called <b>two-photon dissipation</b>, and it keeps pulling the state back to the bottom of a valley.</p>
+  </div>
+  <details><summary>What this picture cannot show</summary>
+    <p>Each point is one possible state of the whole cavity, not a photon. The points are classical: each one ends up either left or right, like a coin. A quantum state can sit in both valleys at once (Experiment 3), and this map cannot draw that. For example, start from an empty cavity, right at the centre. On the map the outcome looks like a coin toss. In reality the empty cavity has an even number of photons (zero), exchanging photons in pairs never changes that, and the state ends up as the even cat: a superposition of both valleys, every time. This is how cat states are prepared in the lab. Noise does the opposite: losing single photons at random turns that superposition into a plain coin toss.</p>
+  </details>
+</section>
+
+<!-- ───────── Experiment 2 ───────── -->
+<section id="exp2">
+  <h2><span class="no">Experiment 2</span>Kick it and see if it flips</h2>
+  <div class="prose"><p>The real world is noisy, and noise keeps kicking the ball at random. If a ball hops from valley <span class="k0">0</span> into valley <span class="k1">1</span>, a stored 0 has become a 1. This error is called a <b>bit flip</b>. The 120 balls below all start in valley 0.</p></div>
+  <div class="bench">
+    <div class="stage"><canvas id="cv2" role="img" aria-label="120 balls jittering under noise, occasionally hopping to the other valley"></canvas><span class="cap">A flashing ring = one flip</span></div>
+    <div class="panel">
+      <ol class="steps">
+        <li>Watch for a moment: how many balls have hopped over to 1?</li>
+        <li>Slowly increase the cat size and keep an eye on “Flips per 10 s”.</li>
+      </ol>
+      <div class="field">
+        <label for="a2"><span>Cat size (mean photon number <span class="m">α</span>²)</span><b id="a2v"></b></label>
+        <input type="range" id="a2" min="1" max="2.4" step="0.05" value="1.45">
+      </div>
+      <div class="field">
+        <label for="d2"><span>Noise strength</span><b id="d2v"></b></label>
+        <input type="range" id="d2" min="0.05" max="0.6" step="0.01" value="0.25">
+      </div>
+      <div class="tiles">
+        <div class="tile"><div class="lab">Still in valley 0</div><div class="val k0" id="n0">120</div></div>
+        <div class="tile"><div class="lab">Flipped to valley 1</div><div class="val k1" id="n1">0</div></div>
+        <div class="tile"><div class="lab">Total flips</div><div class="val" id="nf">0</div></div>
+        <div class="tile"><div class="lab">Flips per 10 s</div><div class="val" id="rf">…</div></div>
+      </div>
+      <div class="row">
+        <button class="primary" id="reset2">Put all back in 0</button>
+        <button id="kick2">Give a hard kick</button>
+      </div>
+      <div class="status small">“Overlap” of the two valleys: <span class="m">e<sup>−2α²</sup></span> = <b class="num" id="ov2"></b><br>In theory, the bit-flip rate of a real cat qubit is proportional to this number.</div>
+    </div>
+  </div>
+  <div class="take">
+    <span class="tag">What you saw</span>
+    <p>The farther apart the valleys, the harder it is to hop across, and it gets harder exponentially. Ideally the bit-flip rate is proportional to <span class="m">e<sup>−2α²</sup></span>: each extra photon in the cavity cuts the rate by about a factor of seven.</p>
+    <p>This is not just theory. In experiments, cat qubits have gone more than ten seconds between bit flips, while ordinary superconducting qubits typically last less than a millisecond.</p>
+  </div>
+  <details><summary>What the ball model leaves out</summary>
+    <p>A ball stands only for the “centre position” of the state, and the noise is simplified to a random push. It shows qualitatively that farther valleys are harder to cross, but the numbers should not be taken literally: in the ball model the flip rate falls even faster than the true law. The correct law <span class="m">e<sup>−2α²</sup></span> comes from the overlap of two quantum states; Section 5 of the notes has the derivation.</p>
+  </details>
+</section>
+
+<!-- ───────── Experiment 3 ───────── -->
+<section id="exp3">
+  <h2><span class="no">Experiment 3</span>Lose a photon</h2>
+  <div class="prose"><p>The ball picture can only show which valley the state is in. A qubit can also be in both valleys at once. This is called a superposition, and it is what “Schrödinger’s cat” refers to. The left plot can show a superposition: the <b>fringes</b> between the two blobs are the evidence of being on both sides at once. The right plot is the distribution of the number of photons in the cavity.</p></div>
+  <div class="bench">
+    <div class="duo">
+      <figure class="stage"><canvas id="wig" role="img" aria-label="Wigner function: two blobs with interference fringes in between"></canvas><figcaption>The quantum state in phase space. <span style="color:var(--accent)">Blue</span> is positive, <span class="kn">orange</span> is negative.</figcaption></figure>
+      <figure class="stage"><canvas id="fock" role="img" aria-label="Bar chart of the photon-number distribution"></canvas><figcaption>Probability of finding <span class="m">n</span> photons. <span style="color:var(--accent)">Even</span> and <span class="kn">odd</span> numbers are coloured differently.</figcaption></figure>
+    </div>
+    <div class="panel">
+      <ol class="steps">
+        <li>Choose “Even cat”, press “Lose 1 photon”, and watch the fringes and the bars.</li>
+        <li>Then press “Remove 1 pair”.</li>
+        <li>Turn on “Auto leak” and make the cat bigger.</li>
+      </ol>
+      <div class="seg two" role="group" aria-label="Choose a quantum state">
+        <button data-s="zero" aria-pressed="false">Valley 0 only</button>
+        <button data-s="one" aria-pressed="false">Valley 1 only</button>
+        <button data-s="even" aria-pressed="true">Even cat (0 + 1)</button>
+        <button data-s="odd" aria-pressed="false">Odd cat (0 − 1)</button>
+      </div>
+      <div class="field">
+        <label for="a3"><span>Cat size (mean photon number <span class="m">α</span>²)</span><b id="a3v"></b></label>
+        <input type="range" id="a3" min="1" max="2.4" step="0.05" value="1.6">
+      </div>
+      <div class="row">
+        <button class="primary" id="lose1">Lose 1 photon</button>
+        <button id="lose2">Remove 1 pair</button>
+        <button id="leak" aria-pressed="false">Auto leak: off</button>
+      </div>
+      <div class="status" id="st3" aria-live="polite"></div>
+      <div class="tiles">
+        <div class="tile"><div class="lab">Photons lost</div><div class="val" id="lost">0</div></div>
+        <div class="tile"><div class="lab">Leak rate (per second)</div><div class="val" id="lrate"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="take">
+    <span class="tag">What you saw</span>
+    <p>Lose one photon and the photon number goes from even to odd, and the fringes flip sign: the even cat has become the odd cat. This is the other kind of error, called a <b>phase flip</b>. A state that sits in a single valley shows no change. As with ordinary qubits, phase flips only hurt superpositions.</p>
+    <p>Removing photons in pairs does not change the parity, so the two-photon process that “locks” the cat causes no trouble of its own. But the cavity always leaks photons by itself, and the more photons there are, the faster it leaks: the phase-flip rate is proportional to <span class="m">α</span>².</p>
+  </div>
+</section>
+
+<!-- ───────── Experiment 4 ───────── -->
+<section id="exp4">
+  <h2><span class="no">The trade-off</span>Cost and payoff</h2>
+  <div class="prose"><p>Make the cat bigger: bit flips fall exponentially, phase flips rise linearly. Drag the slider and watch the two curves separate. Note that each gridline on the vertical axis is a factor of a thousand.</p></div>
+  <div class="bench">
+    <div class="stage chart"><canvas id="trade" role="img" aria-label="Bit-flip and phase-flip probabilities as a function of the mean photon number"></canvas></div>
+    <div class="panel">
+      <div class="field">
+        <label for="a4"><span>Mean photon number <span class="m">α</span>²</span><b id="a4v"></b></label>
+        <input type="range" id="a4" min="1" max="12" step="0.5" value="4">
+      </div>
+      <div class="tiles">
+        <div class="tile"><div class="lab">Bit-flip probability</div><div class="val" id="px" style="color:var(--accent)"></div></div>
+        <div class="tile"><div class="lab">Phase-flip probability</div><div class="val kn" id="pz"></div></div>
+      </div>
+      <div class="tile"><div class="lab">Noise bias: phase flips per bit flip</div><div class="val" id="eta"></div></div>
+      <p class="small muted">Idealised estimate: per error-correction cycle, the bit-flip probability is taken to be <span class="m">e<sup>−2α²</sup></span> and the phase-flip probability 10⁻³ × <span class="m">α</span>². In real devices the bit-flip suppression is slower, and that is exactly what experiments are working on.</p>
+    </div>
+  </div>
+  <div class="take">
+    <span class="tag">So what is good about cat qubits</span>
+    <p>This is a very good deal: a few more phase flips in exchange for almost no bit flips. Only one of the two kinds of error is left to correct, so the simplest repetition code is enough, and it needs far less hardware than protecting against both.</p>
+  </div>
+</section>
+
+<!-- ───────── Experiment 5 ───────── -->
+<section id="exp5">
+  <h2><span class="no">Experiment 5</span>Put a code on top</h2>
+  <div class="prose"><p>A single cat qubit still suffers phase flips. The fix is a <b>repetition code</b>: line up <span class="m">d</span> cat qubits and keep checking whether neighbours agree. A longer line corrects more phase flips. But every extra qubit is one more place where a rare bit flip can sneak in, and the repetition code cannot correct those. The curves below come from circuit-level simulations.</p></div>
+  <div class="bench">
+    <figure class="stage chart"><canvas id="rep" role="img" aria-label="Logical error per round of a repetition code against the number of cat qubits: phase flips fall, bit flips rise, and the total has a minimum"></canvas>
+      <figcaption class="legend"><span><i style="background:var(--neg)"></i>Phase flips (dots: simulated, dashed: fit)</span><span><i style="background:var(--accent)"></i>Bit flips</span><span><i style="background:var(--ink)"></i>Total</span></figcaption></figure>
+    <div class="panel">
+      <ol class="steps">
+        <li>Follow the dark curve: it goes down, then up. Its lowest point is the best code size.</li>
+        <li>Make the cat bigger and watch the best size move.</li>
+        <li>Try a small cat with 2 photons.</li>
+      </ol>
+      <div class="field">
+        <label for="a5"><span>Mean photon number <span class="m">α</span>²</span><b id="a5v"></b></label>
+        <input type="range" id="a5" min="0" max="8" step="1" value="4">
+      </div>
+      <div class="tiles">
+        <div class="tile"><div class="lab">Phase flip per operation</div><div class="val kn" id="r-pz"></div></div>
+        <div class="tile"><div class="lab">Bit flip per operation</div><div class="val" id="r-px" style="color:var(--accent)"></div></div>
+        <div class="tile"><div class="lab">Best code size <span class="m">d</span></div><div class="val" id="r-d"></div></div>
+        <div class="tile"><div class="lab">Logical error per round there</div><div class="val" id="r-tot"></div></div>
+      </div>
+      <p class="small muted">Noise model: every operation (preparation, CNOT, idling, measurement) has a phase-flip probability 10⁻³ × <span class="m">α</span>² and a bit-flip probability <span class="m">e<sup>−2α²</sup></span>, the same idealised numbers as above. Phase flips are sampled with Stim and decoded with PyMatching, then extended to larger <span class="m">d</span> with an exponential fit. Bit flips are computed exactly.</p>
+    </div>
+  </div>
+  <div class="take">
+    <span class="tag">What you saw</span>
+    <p>Phase flips fall quickly as the code gets longer, while bit flips creep up, so the total has a lowest point: the best code size. A bigger cat has far fewer bit flips, so a longer code pays off. Going from 5 to 10 photons, the best size grows from 5 to 19 cat qubits and the logical error per round drops from about 6 × 10⁻⁴ to about 10⁻⁷. With a small cat (4 photons or fewer in this model) bit flips are so frequent that a longer code only makes things worse.</p>
+  </div>
+
+  <h3 class="sub">What if a code protects against both errors?</h3>
+  <div class="prose"><p>A surface code corrects both kinds of error with a two-dimensional grid of qubits. Its standard form (CSS) treats bit flips and phase flips alike. A variant called the <b>XZZX code</b> uses the same grid but relabels its checks so that it can exploit biased noise. Below, both codes have the same size and the same total error rate; only the bias of the noise changes.</p></div>
+  <div class="bench">
+    <figure class="stage chart"><canvas id="surf" role="img" aria-label="Logical error per round of the CSS and XZZX surface codes as the noise bias increases"></canvas>
+      <figcaption class="legend"><span><i style="background:var(--muted)"></i>CSS surface code</span><span><i style="background:var(--zero)"></i>XZZX surface code</span></figcaption></figure>
+    <div class="panel">
+      <div class="field">
+        <label for="e5"><span>Noise bias <span class="m">η</span></span><b id="e5v"></b></label>
+        <input type="range" id="e5" min="0" max="7" step="1" value="5">
+      </div>
+      <div class="tiles">
+        <div class="tile"><div class="lab">CSS: logical error per round</div><div class="val" id="s-css"></div></div>
+        <div class="tile"><div class="lab">XZZX: logical error per round</div><div class="val k0" id="s-xzzx"></div></div>
+      </div>
+      <div class="tile"><div class="lab">XZZX advantage over CSS</div><div class="val" id="s-ratio"></div></div>
+      <p class="small muted">Rotated surface codes of distance 5 (25 data qubits). Every operation fails with a total probability of 0.3%, split between phase flips and the other errors according to <span class="m">η</span>; <span class="m">η</span> = 0.5 is unbiased noise. Each point adds the logical errors of the Z-basis and X-basis memory experiments, and the bars show the statistical uncertainty. The model assumes that gates never turn phase flips into bit flips, which is optimistic for real cat qubits.</p>
+    </div>
+  </div>
+  <div class="take">
+    <span class="tag">What you saw</span>
+    <p>As the noise becomes more biased, the standard code stays at about 4 × 10⁻³, while the XZZX code keeps improving: at <span class="m">η</span> = 1000 it makes about 11 times fewer errors with the very same qubits. The more biased the noise, the more it pays to tailor the code to it. The repetition code above is the extreme case: it gives up on correcting bit flips altogether.</p>
+  </div>
+  <p class="small muted">Simulations by Ziqi Xu, using Stim and PyMatching.</p>
+</section>
+
+<section>
+  <h2>Three things to take away</h2>
+  <ul class="sum">
+    <li>Exchanging photons in pairs creates two stable valleys: one serves as <span class="k0">0</span>, the other as <span class="k1">1</span>.</li>
+    <li>The farther apart the valleys, the exponentially rarer the bit flips.</li>
+    <li>The price is linearly more phase flips. But with only one kind of error left, correction is cheap.</li>
+  </ul>
+</section>
+
+<!-- ───────── Notes ───────── -->
+<section id="notes">
+  <h2>Want the derivations? The notes are here</h2>
+  <div class="prose"><p>The notes start from coherent states, derive the formulas behind Experiments 1 to 4, explain how the hardware is built, and end with exercises. If you have seen the harmonic oscillator in quantum mechanics, you can read them.</p></div>
+  <div class="reader">
+    <div class="bar">
+      <div class="row">
+        <button id="pg-prev">Previous</button>
+        <button id="pg-next" class="primary">Next</button>
+      </div>
+      <span class="num small muted" id="pg-n"></span>
+    </div>
+    <div class="page"><img id="pg-img" alt="Page of the notes" width="1240" height="1754"></div>
+    <div class="bar">
+      <div class="row">
+        <button id="dl-pdf" hidden>Download PDF</button>
+        <a id="dl-link" href="cat-qubit-notes.pdf" hidden>Download PDF</a>
+      </div>
+      <span class="small muted" id="dl-msg" aria-live="polite"></span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h3>Further reading</h3>
+  <ol class="refs">
+    <li>M. Mirrahimi et al., <a href="https://arxiv.org/abs/1312.2017">Dynamically protected cat-qubits</a>, New J. Phys. 16, 045014 (2014). The original cat-qubit proposal.</li>
+    <li>R. Lescanne et al., <a href="https://arxiv.org/abs/1907.11729">Exponential suppression of bit-flips in a qubit encoded in an oscillator</a>, Nature Physics 16, 509 (2020). The first experimental observation of the exponential suppression.</li>
+    <li>J. Guillaud and M. Mirrahimi, <a href="https://arxiv.org/abs/1904.09474">Repetition cat qubits for fault-tolerant quantum computation</a>, Phys. Rev. X 9, 041053 (2019). Cat qubits plus a repetition code.</li>
+    <li>U. Réglade et al., <a href="https://arxiv.org/abs/2307.06617">Quantum control of a cat qubit with bit-flip times exceeding ten seconds</a>, Nature 629, 778 (2024).</li>
+    <li>J. P. Bonilla Ataides et al., <a href="https://arxiv.org/abs/2009.07851">The XZZX surface code</a>, Nature Communications 12, 2172 (2021). The surface code tailored to biased noise.</li>
+    <li>C. Gidney, <a href="https://arxiv.org/abs/2103.02202">Stim: a fast stabilizer circuit simulator</a>, Quantum 5, 497 (2021). The simulator behind Experiment 5.</li>
+  </ol>
+</section>
+
+<footer>Made by Ziqi Xu · 2026 &nbsp;|&nbsp; The ball picture is a simplified semiclassical cartoon; for quantitative statements, see the notes.</footer>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const NOTES_PAGES = 13;   /* set at build time */
+const TAU = Math.PI * 2;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ── theme tokens (all 6-digit hex so canvases can blend them) ── */
+const T = {};
+function readTheme(){
+  const cs = getComputedStyle(document.documentElement);
+  for (const k of ['bg','surface','stage','ink','muted','line','zero','one','accent','neg']) T[k] = cs.getPropertyValue('--'+k).trim();
+  T.font = cs.getPropertyValue('--font-body').trim();
+  T.mono = cs.getPropertyValue('--font-mono').trim();
+}
+const rgb = h => { const n = parseInt(h.slice(1,7),16); return [(n>>16)&255,(n>>8)&255,n&255]; };
+const rgba = (h,a) => { const c = rgb(h); return `rgba(${c[0]},${c[1]},${c[2]},${a})`; };
+readTheme();
+
+function fit(cv){
+  const r = cv.getBoundingClientRect(); if(!r.width) return null;
+  const d = Math.min(window.devicePixelRatio||1, 2);
+  const w = Math.round(r.width*d), h = Math.round(r.height*d);
+  if (cv.width!==w || cv.height!==h){ cv.width=w; cv.height=h; }
+  const ctx = cv.getContext('2d'); ctx.setTransform(d,0,0,d,0,0);
+  return {ctx, W:r.width, H:r.height};
+}
+let spare = null;
+function gauss(){ if(spare!==null){ const s=spare; spare=null; return s; }
+  let u=0; while(u===0) u=Math.random(); const v=Math.random(), m=Math.sqrt(-2*Math.log(u));
+  spare = m*Math.sin(TAU*v); return m*Math.cos(TAU*v); }
+const sup = s => String(s).replace(/[-0-9]/g, c => ({'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'})[c]);
+function sci(x){ if(x>=0.01) return x.toFixed(x>=0.1?2:3); const e=Math.floor(Math.log10(x)); return (x/Math.pow(10,e)).toFixed(1)+' × 10'+sup(e); }
+function cpow(x,y,k){ let rx=1, ry=0; for(let i=0;i<k;i++){ const t=rx*x-ry*y; ry=rx*y+ry*x; rx=t; } return [rx,ry]; }
+
+/* ── hero mark: Bernoulli's lemniscate, the level curve that separates the two valleys ── */
+function drawMark(){
+  const f = fit($('#mark')); if(!f) return; const {ctx,W,H} = f; ctx.clearRect(0,0,W,H);
+  const a = W*0.3, cx = W/2, cy = H/2;
+  ctx.beginPath();
+  for(let i=0;i<=200;i++){ const t=i/200*TAU, s=Math.sin(t), c=Math.cos(t), q=a*Math.SQRT2/(1+s*s);
+    const x=cx+q*c, y=cy+q*c*s; i?ctx.lineTo(x,y):ctx.moveTo(x,y); }
+  ctx.strokeStyle=T.ink; ctx.lineWidth=1.6; ctx.stroke();
+  [[1,T.zero,'0'],[-1,T.one,'1']].forEach(([s,col,l])=>{ ctx.beginPath(); ctx.arc(cx+s*a,cy,6,0,TAU); ctx.fillStyle=col; ctx.fill();
+    ctx.font=`600 13px ${T.mono}`; ctx.textAlign='center'; ctx.fillText(l,cx+s*a,cy-14); });
+}
+
+/* ── phase-space stage: dissipation with jump operator a^k − α^k is downhill motion on |β^k − α^k|² ── */
+const LEVELS = [0.3,0.6,0.85,1,1.5,2.4,3.8,6,9.5];
+class Stage{
+  constructor(cv,o){
+    Object.assign(this,{cv,k:2,alpha:1.8,D:0,trails:true,ps:[],flips:0,t:0,XR:3.6,visible:true,flash:[]},o);
+    new ResizeObserver(()=>{ this.cont=null; this.draw(); }).observe(cv);
+    new IntersectionObserver(es=>{ this.visible = es[0].isIntersecting; },{rootMargin:'120px'}).observe(cv);
+    if(this.clickAdd) cv.addEventListener('click',e=>{ const r=cv.getBoundingClientRect(), YR=this.XR*r.height/r.width;
+      this.add((e.clientX-r.left)/r.width*2*this.XR-this.XR, YR-(e.clientY-r.top)/r.height*2*YR); });
+  }
+  set(p){ Object.assign(this,p); this.cont=null; }
+  wells(){ const w=[]; for(let j=0;j<this.k;j++) w.push([this.alpha*Math.cos(TAU*j/this.k), this.alpha*Math.sin(TAU*j/this.k)]); return w; }
+  colors(){ return this.k<=2 ? [T.zero,T.one] : [T.zero,T.accent,T.one,T.neg]; }
+  well(x,y){ const k=this.k; if(k===1) return 0; return ((Math.round(Math.atan2(y,x)/(TAU/k))%k)+k)%k; }
+  flow(x,y){
+    const a=this.alpha,k=this.k;
+    if(k===1) return [-1.6*(x-a), -1.6*y];
+    const f=cpow(x,y,k), Fx=f[0]-Math.pow(a,k), Fy=f[1], g=cpow(x,-y,k-1);
+    const s = k===2 ? 0.5 : 3/(k*Math.pow(a,2*k-2));
+    return [-s*(g[0]*Fx-g[1]*Fy), -s*(g[0]*Fy+g[1]*Fx)];
+  }
+  add(x,y){ this.ps.push({x,y,s:-1,tr:[]}); this.changed&&this.changed(); }
+  step(dt){
+    const n=4, h=dt/n, sd=Math.sqrt(2*this.D*h), lim=this.XR*1.15, th=0.4*this.alpha;
+    for(const p of this.ps){
+      for(let i=0;i<n;i++){
+        const v=this.flow(p.x,p.y); let dx=v[0]*h, dy=v[1]*h; const m=Math.hypot(dx,dy);
+        if(m>0.06){ dx*=0.06/m; dy*=0.06/m; }
+        p.x+=dx; p.y+=dy;
+        if(sd){ p.x+=sd*gauss(); p.y+=sd*gauss(); }
+        if(p.x>lim) p.x=lim; else if(p.x<-lim) p.x=-lim; if(p.y>lim) p.y=lim; else if(p.y<-lim) p.y=-lim;
+      }
+      if(this.k===2){ const s = p.x>th ? 0 : p.x<-th ? 1 : p.s;
+        if(s!==p.s){ if(p.s!==-1 && this.count){ this.flips++; this.flash.push({x:p.x,y:p.y,a:1}); } p.s=s; } }
+      if(this.trails){ p.tr.push(p.x,p.y); if(p.tr.length>60) p.tr.splice(0,2); }
+    }
+    this.t+=dt;
+    for(const f of this.flash) f.a-=dt*1.6; this.flash=this.flash.filter(f=>f.a>0);
+  }
+  build(W,H,YR){
+    const nx=110, ny=Math.max(8,Math.round(nx*H/W)), XR=this.XR, k=this.k, ak=Math.pow(this.alpha,k), st=nx+1;
+    const v=new Float32Array(st*(ny+1));
+    for(let j=0;j<=ny;j++) for(let i=0;i<=nx;i++){ const f=cpow(-XR+2*XR*i/nx, -YR+2*YR*j/ny, k); v[j*st+i]=Math.hypot(f[0]-ak,f[1])/ak; }
+    const sx=W/nx, sy=H/ny;
+    this.cont = LEVELS.map(L=>{ const P=new Path2D();
+      for(let j=0;j<ny;j++) for(let i=0;i<nx;i++){
+        const a0=v[j*st+i], a1=v[j*st+i+1], a2=v[(j+1)*st+i+1], a3=v[(j+1)*st+i];
+        const c=(a0>L)|((a1>L)<<1)|((a2>L)<<2)|((a3>L)<<3); if(c===0||c===15) continue;
+        const E=e=> e===0 ? [(i+(L-a0)/(a1-a0))*sx, H-j*sy] : e===1 ? [(i+1)*sx, H-(j+(L-a1)/(a2-a1))*sy]
+                  : e===2 ? [(i+(L-a3)/(a2-a3))*sx, H-(j+1)*sy] : [i*sx, H-(j+(L-a0)/(a3-a0))*sy];
+        const seg=(p,q)=>{ const A=E(p),B=E(q); P.moveTo(A[0],A[1]); P.lineTo(B[0],B[1]); };
+        switch(c){ case 1:case 14:seg(3,0);break; case 2:case 13:seg(0,1);break; case 3:case 12:seg(3,1);break;
+          case 4:case 11:seg(1,2);break; case 6:case 9:seg(0,2);break; case 7:case 8:seg(3,2);break;
+          case 5:seg(3,2);seg(0,1);break; case 10:seg(3,0);seg(1,2);break; }
+      } return P; });
+  }
+  draw(){
+    const f=fit(this.cv); if(!f) return; const {ctx,W,H}=f, XR=this.XR, YR=XR*H/W;
+    const X=x=>(x+XR)/(2*XR)*W, Y=y=>(YR-y)/(2*YR)*H;
+    ctx.clearRect(0,0,W,H);
+    if(!this.cont) this.build(W,H,YR);
+    const cols=this.colors(), ws=this.wells();
+    ws.forEach((w,j)=>{ const g=ctx.createRadialGradient(X(w[0]),Y(w[1]),0,X(w[0]),Y(w[1]),W*0.13);
+      g.addColorStop(0,rgba(cols[j],0.22)); g.addColorStop(1,rgba(cols[j],0)); ctx.fillStyle=g; ctx.fillRect(0,0,W,H); });
+    ctx.lineWidth=1;
+    this.cont.forEach((P,i)=>{ const sep=LEVELS[i]===1; ctx.strokeStyle=rgba(T.muted, sep?0.75:0.3); ctx.setLineDash(sep?[5,4]:[]); ctx.stroke(P); });
+    ctx.setLineDash([]);
+    ctx.strokeStyle=rgba(T.muted,0.5); ctx.fillStyle=rgba(T.muted,0.5);
+    for(let gx=-3.3;gx<=3.31;gx+=0.6) for(let gy=-Math.floor(YR/0.6)*0.6;gy<=YR;gy+=0.6){
+      const v=this.flow(gx,gy), m=Math.hypot(v[0],v[1]); if(m<0.02) continue;
+      const L=0.06+0.2*Math.tanh(m/2.5), ux=v[0]/m, uy=v[1]/m;
+      const x0=X(gx-ux*L/2), y0=Y(gy-uy*L/2), x1=X(gx+ux*L/2), y1=Y(gy+uy*L/2), an=Math.atan2(y1-y0,x1-x0);
+      ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x1-5*Math.cos(an-0.45),y1-5*Math.sin(an-0.45)); ctx.lineTo(x1-5*Math.cos(an+0.45),y1-5*Math.sin(an+0.45)); ctx.fill();
+    }
+    ctx.font=`600 14px ${T.mono}`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ws.forEach((w,j)=>{ ctx.beginPath(); ctx.arc(X(w[0]),Y(w[1]),13,0,TAU); ctx.strokeStyle=cols[j]; ctx.lineWidth=2; ctx.stroke();
+      if(this.k>1){ ctx.fillStyle=cols[j]; ctx.fillText(String(j), X(w[0]), Y(w[1])-25); } });
+    if(this.trails){ ctx.lineWidth=1.2;
+      for(const p of this.ps){ if(p.tr.length<4) continue; ctx.strokeStyle=rgba(cols[this.well(p.x,p.y)],0.35); ctx.beginPath();
+        ctx.moveTo(X(p.tr[0]),Y(p.tr[1])); for(let i=2;i<p.tr.length;i+=2) ctx.lineTo(X(p.tr[i]),Y(p.tr[i+1])); ctx.stroke(); } }
+    const rad = this.ps.length>60 ? 3 : 4.5;
+    for(const p of this.ps){ ctx.fillStyle = cols[this.k===2 && p.s>=0 ? p.s : this.well(p.x,p.y)]; ctx.beginPath(); ctx.arc(X(p.x),Y(p.y),rad,0,TAU); ctx.fill(); }
+    for(const fl of this.flash){ ctx.strokeStyle=rgba(T.ink,fl.a); ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(X(fl.x),Y(fl.y),6+16*(1-fl.a),0,TAU); ctx.stroke(); }
+  }
+}
+
+/* ── experiment 1 ── */
+const S1 = new Stage($('#cv1'),{k:1,alpha:1.8,clickAdd:true});
+function scatter1(n){ const YR=S1.XR*0.72; for(let i=0;i<n;i++) S1.add((Math.random()*2-1)*3.2,(Math.random()*2-1)*YR); }
+function ui1(){
+  const a=S1.alpha; $('#a1v').textContent=`α = ${a.toFixed(2)}, about ${(a*a).toFixed(1)} photons`;
+  $('#m1').setAttribute('aria-pressed', S1.k===1); $('#m2').setAttribute('aria-pressed', S1.k===2);
+  const n=S1.ps.length, st=$('#st1');
+  if(!n){ st.textContent='No points on the map yet. Press “Scatter points”, or click anywhere on the map.'; return; }
+  if(S1.k===1){ st.textContent=`All ${n} points flow to the same spot. There is only one valley, so 0 and 1 cannot be told apart.`; return; }
+  const c=new Array(S1.k).fill(0); for(const p of S1.ps) c[S1.well(p.x,p.y)]++;
+  st.textContent = S1.k===2 ? `Right valley (0): ${c[0]} points. Left valley (1): ${c[1]} points. Both valleys are stable: exactly one bit.`
+    : `${S1.k} photons at a time gives ${S1.k} valleys, holding ${c.join(', ')} points.` + (S1.k===4 ? ' The four-valley “four-legged cat” can be used to detect photon loss.' : ' Click the bonus again to try 4.');
+}
+S1.changed = ui1;
+function mode1(k){ S1.set({k}); S1.ps=[]; scatter1(40); ui1(); }
+$('#m1').onclick=()=>mode1(1);
+$('#m2').onclick=()=>mode1(2);
+$('#egg').onclick=()=>mode1(S1.k===3 ? 4 : 3);
+$('#a1').oninput=e=>{ S1.set({alpha:+e.target.value}); ui1(); };
+$('#scatter1').onclick=()=>scatter1(40);
+$('#clear1').onclick=()=>{ S1.ps=[]; ui1(); };
+
+/* ── experiment 2 ── */
+const S2 = new Stage($('#cv2'),{k:2,alpha:1.45,D:0.25,trails:false,count:true});
+function reset2(){ S2.ps=[]; S2.flips=0; S2.t=0; S2.flash=[];
+  for(let i=0;i<120;i++) S2.ps.push({x:S2.alpha+0.18*gauss(), y:0.18*gauss(), s:0, tr:[]}); ui2(); }
+function ui2(){
+  const a=S2.alpha; $('#a2v').textContent=`${(a*a).toFixed(1)} photons`; $('#d2v').textContent=S2.D.toFixed(2);
+  $('#ov2').textContent=sci(Math.exp(-2*a*a));
+  let n1=0; for(const p of S2.ps) if(p.s===1) n1++;
+  $('#n0').textContent=S2.ps.length-n1; $('#n1').textContent=n1; $('#nf').textContent=S2.flips;
+  $('#rf').textContent = S2.t<3 ? '…' : (S2.flips/S2.t*10).toFixed(S2.flips/S2.t*10<10?1:0);
+}
+$('#a2').oninput=e=>{ S2.set({alpha:+e.target.value}); reset2(); };
+$('#d2').oninput=e=>{ S2.D=+e.target.value; reset2(); };
+$('#reset2').onclick=reset2;
+$('#kick2').onclick=()=>{ for(const p of S2.ps){ p.x+=0.9*gauss(); p.y+=0.9*gauss(); } };
+
+/* ── experiment 3: Wigner function and photon-number distribution of |±α⟩ and the cat states ── */
+const E3={alpha:1.6,kind:'cat',sign:1,lost:0,leak:false};
+const off=document.createElement('canvas'); off.width=off.height=150;
+function wig(x,p){ const a=E3.alpha, c=2/Math.PI, s=E3.sign;
+  if(E3.kind==='coh'){ const dx=x-s*a; return c*Math.exp(-2*(dx*dx+p*p)); }
+  return c*(Math.exp(-2*((x-a)*(x-a)+p*p))+Math.exp(-2*((x+a)*(x+a)+p*p))+2*s*Math.exp(-2*(x*x+p*p))*Math.cos(4*a*p))/(2*(1+s*Math.exp(-2*a*a))); }
+function drawWig(){
+  const f=fit($('#wig')); if(!f) return; const {ctx,W,H}=f, N=off.width, R=3.6, o=off.getContext('2d'), im=o.createImageData(N,N);
+  const bg=rgb(T.stage), pos=rgb(T.accent), neg=rgb(T.neg);
+  for(let j=0;j<N;j++) for(let i=0;i<N;i++){
+    const w=wig((i+0.5)/N*2*R-R, R-(j+0.5)/N*2*R), c=w>0?pos:neg, t=Math.min(1,Math.pow(Math.abs(w)/0.6366,0.75)), q=(j*N+i)*4;
+    im.data[q]=bg[0]+(c[0]-bg[0])*t; im.data[q+1]=bg[1]+(c[1]-bg[1])*t; im.data[q+2]=bg[2]+(c[2]-bg[2])*t; im.data[q+3]=255; }
+  o.putImageData(im,0,0); ctx.imageSmoothingEnabled=true; ctx.drawImage(off,0,0,W,H);
+  const X=x=>(x+R)/(2*R)*W;
+  ctx.strokeStyle=rgba(T.muted,0.35); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke();
+  ctx.font=`600 12px ${T.mono}`; ctx.textAlign='center'; ctx.textBaseline='top';
+  ctx.fillStyle=T.zero; ctx.fillText('0',X(E3.alpha),H-18); ctx.fillStyle=T.one; ctx.fillText('1',X(-E3.alpha),H-18);
+}
+function fockP(){ const a2=E3.alpha*E3.alpha, P=[]; let t=Math.exp(-a2);
+  for(let n=0;n<=14;n++){ if(n) t*=a2/n;
+    P.push(E3.kind==='coh' ? t : ((n%2===0)===(E3.sign===1) ? 2*t/(1+E3.sign*Math.exp(-2*a2)) : 0)); } return P; }
+function drawFock(){
+  const f=fit($('#fock')); if(!f) return; const {ctx,W,H}=f, P=fockP(); ctx.clearRect(0,0,W,H);
+  const top=Math.max(0.3,Math.ceil(Math.max(...P)*10)/10), L=34, B=H-26, Tp=14, bw=(W-L-8)/P.length;
+  ctx.font=`11px ${T.mono}`; ctx.textBaseline='middle'; ctx.lineWidth=1;
+  for(let g=0;g<=top+1e-9;g+=0.1){ const y=B-(B-Tp)*g/top; ctx.strokeStyle=rgba(T.muted,g?0.2:0.6); ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(W-4,y); ctx.stroke();
+    ctx.fillStyle=T.muted; ctx.textAlign='right'; ctx.fillText(g.toFixed(1),L-5,y); }
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  P.forEach((p,n)=>{ const x=L+n*bw, h=(B-Tp)*p/top; ctx.fillStyle = n%2 ? T.neg : T.accent; ctx.fillRect(x+bw*0.15,B-h,bw*0.7,h);
+    if(n%2===0){ ctx.fillStyle=T.muted; ctx.fillText(String(n),x+bw/2,B+6); } });
+}
+function ui3(msg){
+  const a=E3.alpha; $('#a3v').textContent=`${(a*a).toFixed(1)} photons`;
+  const cur = E3.kind==='coh' ? (E3.sign===1?'zero':'one') : (E3.sign===1?'even':'odd');
+  document.querySelectorAll('[data-s]').forEach(b=>b.setAttribute('aria-pressed', b.dataset.s===cur));
+  $('#lost').textContent=E3.lost; $('#lrate').textContent = E3.leak ? (0.4*a*a).toFixed(1) : '0';
+  $('#leak').textContent='Auto leak: '+(E3.leak?'on':'off'); $('#leak').setAttribute('aria-pressed',E3.leak);
+  if(msg) $('#st3').textContent=msg; drawWig(); drawFock();
+}
+function lose(quiet){ E3.lost++;
+  if(E3.kind==='cat'){ E3.sign=-E3.sign; ui3(quiet?null:`Lost 1 photon: ${E3.sign===1?'the odd cat became the even cat':'the even cat became the odd cat'}. The fringes flipped sign and the photon-number parity changed. That is one phase flip.`); }
+  else ui3(quiet?null:'Lost 1 photon: the blob has not moved. A state sitting in a single valley shows no sign of this error.'); }
+document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{ const s=b.dataset.s;
+  E3.kind=(s==='zero'||s==='one')?'coh':'cat'; E3.sign=(s==='zero'||s==='even')?1:-1; E3.lost=0;
+  ui3({zero:'The whole blob is in valley 0. No fringes; both even and odd photon numbers appear.',one:'The whole blob is in valley 1. No fringes; both even and odd photon numbers appear.',
+       even:'Even cat: in both valleys at once. Fringes in the middle, even photon numbers only.',odd:'Odd cat: in both valleys at once. The fringes are the opposite of the even cat, odd photon numbers only.'}[s]); });
+$('#a3').oninput=e=>{ E3.alpha=+e.target.value; ui3(); };
+$('#lose1').onclick=()=>lose(false);
+$('#lose2').onclick=()=>{ E3.lost+=2; ui3('Removed 1 pair of photons: nothing changed. The parity is untouched, which is why it is safe to lock the cat with a process that works in pairs.'); };
+$('#leak').onclick=()=>{ E3.leak=!E3.leak; ui3(E3.leak?'The cavity now leaks photons by itself, and every lost photon is one phase flip. Make the cat bigger and see how fast it leaks.':'Auto leak is off.'); };
+
+/* ── experiment 4: idealised error budget per correction cycle ── */
+function drawTrade(){
+  const n=+$('#a4').value, px=Math.exp(-2*n), pz=1e-3*n;
+  $('#a4v').textContent=`${n.toFixed(1)} photons`; $('#px').textContent=sci(px); $('#pz').textContent=sci(pz);
+  const eta=pz/px, ee=Math.floor(Math.log10(eta)); $('#eta').textContent = eta<1000 ? eta.toFixed(eta<10?1:0) : (eta/Math.pow(10,ee)).toFixed(1)+' × 10'+sup(ee);
+  const f=fit($('#trade')); if(!f) return; const {ctx,W,H}=f; ctx.clearRect(0,0,W,H);
+  const L=52,R=16,Tp=18,B=H-36, X=v=>L+(W-L-R)*v/12, Y=p=>Tp+(B-Tp)*(-Math.log10(p))/12;
+  ctx.font=`11px ${T.mono}`; ctx.lineWidth=1;
+  for(let e=0;e<=12;e+=3){ const y=Tp+(B-Tp)*e/12; ctx.strokeStyle=rgba(T.muted,0.22); ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(W-R,y); ctx.stroke();
+    ctx.fillStyle=T.muted; ctx.textAlign='right'; ctx.textBaseline='middle'; ctx.fillText(e?'10'+sup(-e):'1',L-6,y); }
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  for(let v=0;v<=12;v+=2){ ctx.fillStyle=T.muted; ctx.fillText(String(v),X(v),B+6); }
+  ctx.font=`12px ${T.font}`; ctx.fillText('Mean photon number α²',X(6),B+20);
+  ctx.strokeStyle=rgba(T.muted,0.6); ctx.beginPath(); ctx.moveTo(L,Tp); ctx.lineTo(L,B); ctx.lineTo(W-R,B); ctx.stroke();
+  const line=(fn,col)=>{ ctx.strokeStyle=col; ctx.lineWidth=2.2; ctx.beginPath(); for(let v=0.25;v<=12;v+=0.25){ const x=X(v), y=Y(fn(v)); v===0.25?ctx.moveTo(x,y):ctx.lineTo(x,y); } ctx.stroke(); };
+  line(v=>Math.exp(-2*v),T.accent); line(v=>1e-3*v,T.neg);
+  ctx.font=`600 12.5px ${T.font}`; ctx.textAlign='left'; ctx.textBaseline='bottom';
+  ctx.fillStyle=T.neg; ctx.fillText('Phase flips (linear growth)',X(4.6),Y(1e-3*5)-7);
+  ctx.fillStyle=T.accent; ctx.textBaseline='top'; ctx.fillText('Bit flips (exponential decay)',X(0.5),Y(1e-8));
+  ctx.strokeStyle=rgba(T.ink,0.5); ctx.setLineDash([4,4]); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(X(n),Tp); ctx.lineTo(X(n),B); ctx.stroke(); ctx.setLineDash([]);
+  [[px,T.accent],[pz,T.neg]].forEach(([p,c])=>{ ctx.beginPath(); ctx.arc(X(n),Y(p),5,0,TAU); ctx.fillStyle=c; ctx.fill(); ctx.strokeStyle=T.stage; ctx.lineWidth=2; ctx.stroke(); });
+}
+$('#a4').oninput=drawTrade;
+
+/* ── experiment 5: circuit-level Stim simulations (numbers generated by make_site_data.py) ── */
+const REP = {"ds":[3,5,7,9,11,13,15,17,19,21,23,25,27,29,31],"rows":[{"n":2,"pz":0.002,"px":0.0183,"lz":[0.000175,5.43e-06,1.68e-07,5.22e-09,1.62e-10,5.03e-12,1.56e-13,4.84e-15,1.5e-16,4.65e-18,1.44e-19,4.48e-21,1.39e-22,4.31e-24,1.34e-25],"lx":[0.124,0.184,0.234,0.277,0.312,0.342,0.367,0.388,0.406,0.397,0.382,0.368,0.354,0.341,0.329],"s":[[3,0.000175],[5,5.42e-06],[7,1.69e-07]]},{"n":3,"pz":0.003,"px":0.00248,"lz":[0.000342,1.82e-05,9.69e-07,5.16e-08,2.75e-09,1.47e-10,7.8e-12,4.16e-13,2.21e-14,1.18e-15,6.28e-17,3.35e-18,1.78e-19,9.5e-21,5.06e-22],"lx":[0.0187,0.0297,0.0405,0.051,0.0613,0.0714,0.0812,0.0908,0.1,0.109,0.118,0.127,0.136,0.144,0.152],"s":[[3,0.000368],[5,1.75e-05],[7,8.34e-07],[9,5.78e-08]]},{"n":4,"pz":0.004,"px":0.000335,"lz":[0.000618,4.18e-05,2.82e-06,1.9e-07,1.29e-08,8.69e-10,5.87e-11,3.96e-12,2.68e-13,1.81e-14,1.22e-15,8.25e-17,5.57e-18,3.76e-19,2.54e-20],"lx":[0.00257,0.00412,0.00567,0.00722,0.00876,0.0103,0.0118,0.0134,0.0149,0.0164,0.0179,0.0194,0.0209,0.0224,0.0239],"s":[[3,0.000652],[5,4.07e-05],[7,2.53e-06],[9,2.07e-07]]},{"n":5,"pz":0.005,"px":4.54e-05,"lz":[0.000918,8.22e-05,7.37e-06,6.6e-07,5.92e-08,5.3e-09,4.75e-10,4.26e-11,3.81e-12,3.42e-13,3.06e-14,2.74e-15,2.46e-16,2.2e-17,1.97e-18],"lx":[0.000348,0.00056,0.000771,0.000983,0.00119,0.00141,0.00162,0.00183,0.00204,0.00225,0.00246,0.00267,0.00288,0.00309,0.0033],"s":[[3,0.000999],[5,8.1e-05],[7,6.7e-06],[9,5.96e-07],[11,6.73e-08]]},{"n":6,"pz":0.006,"px":6.14e-06,"lz":[0.00143,0.000147,1.51e-05,1.55e-06,1.59e-07,1.63e-08,1.67e-09,1.71e-10,1.75e-11,1.8e-12,1.84e-13,1.89e-14,1.94e-15,1.99e-16,2.04e-17],"lx":[4.71e-05,7.58e-05,0.000104,0.000133,0.000162,0.00019,0.000219,0.000248,0.000276,0.000305,0.000334,0.000362,0.000391,0.00042,0.000448],"s":[[3,0.0015],[5,0.000141],[7,1.43e-05],[9,1.6e-06],[11,1.6e-07]]},{"n":7,"pz":0.007,"px":8.32e-07,"lz":[0.00174,0.000222,2.83e-05,3.6e-06,4.58e-07,5.83e-08,7.42e-09,9.45e-10,1.2e-10,1.53e-11,1.95e-12,2.48e-13,3.16e-14,4.02e-15,5.12e-16],"lx":[6.38e-06,1.03e-05,1.41e-05,1.8e-05,2.19e-05,2.58e-05,2.97e-05,3.35e-05,3.74e-05,4.13e-05,4.52e-05,4.91e-05,5.29e-05,5.68e-05,6.07e-05],"s":[[3,0.00196],[5,0.000204],[7,2.57e-05],[9,3.53e-06],[11,4.98e-07]]},{"n":8,"pz":0.008,"px":1.13e-07,"lz":[0.00236,0.000338,4.85e-05,6.95e-06,9.98e-07,1.43e-07,2.05e-08,2.94e-09,4.22e-10,6.06e-11,8.69e-12,1.25e-12,1.79e-13,2.56e-14,3.68e-15],"lx":[8.63e-07,1.39e-06,1.91e-06,2.44e-06,2.96e-06,3.49e-06,4.01e-06,4.54e-06,5.06e-06,5.59e-06,6.11e-06,6.64e-06,7.16e-06,7.69e-06,8.22e-06],"s":[[3,0.00265],[5,0.000319],[7,4.19e-05],[9,6.87e-06],[11,1.1e-06]]},{"n":9,"pz":0.009,"px":1.52e-08,"lz":[0.0028,0.000469,7.86e-05,1.32e-05,2.21e-06,3.7e-07,6.21e-08,1.04e-08,1.75e-09,2.93e-10,4.91e-11,8.23e-12,1.38e-12,2.31e-13,3.88e-14],"lx":[1.17e-07,1.88e-07,2.59e-07,3.3e-07,4.01e-07,4.72e-07,5.43e-07,6.14e-07,6.85e-07,7.56e-07,8.27e-07,8.99e-07,9.7e-07,1.04e-06,1.11e-06],"s":[[3,0.00299],[5,0.000448],[7,7.46e-05],[9,1.29e-05],[11,2.33e-06]]},{"n":10,"pz":0.01,"px":2.06e-09,"lz":[0.00345,0.000637,0.000117,2.17e-05,3.99e-06,7.36e-07,1.36e-07,2.5e-08,4.62e-09,8.51e-10,1.57e-10,2.89e-11,5.34e-12,9.84e-13,1.81e-13],"lx":[1.58e-08,2.54e-08,3.5e-08,4.47e-08,5.43e-08,6.39e-08,7.35e-08,8.31e-08,9.28e-08,1.02e-07,1.12e-07,1.22e-07,1.31e-07,1.41e-07,1.5e-07],"s":[[3,0.00366],[5,0.000632],[7,0.000106],[9,2.17e-05],[11,4.2e-06]]}]};
+const SURF = {"etas":[0.5,1,3,10,30,100,300,1000],"css":[[0.00416,9.1e-05],[0.00369,8.7e-05],[0.00349,0.0001],[0.00371,0.00011],[0.00381,0.00012],[0.00388,0.00012],[0.00395,0.00012],[0.00395,0.00012]],"xzzx":[[0.00427,9.4e-05],[0.00347,7.6e-05],[0.00202,4.5e-05],[0.00109,2.4e-05],[0.00069,1.6e-05],[0.000493,1.2e-05],[0.000385,9.4e-06],[0.000344,8.4e-06]]};
+function plotFrame(cv, xs, e0, e1, xlab, xfmt, X){
+  const f=fit(cv); if(!f) return null; const {ctx,W,H}=f; ctx.clearRect(0,0,W,H);
+  const L=52,R=16,Tp=18,B=H-36, Y=p=>Tp+(B-Tp)*(e0-Math.log10(p))/(e0-e1), Xp=v=>L+(W-L-R)*X(v);
+  ctx.font=`11px ${T.mono}`; ctx.lineWidth=1;
+  const step=(e0-e1)>8?3:1;
+  for(let e=e0;e>=e1;e-=step){ const y=Tp+(B-Tp)*(e0-e)/(e0-e1); ctx.strokeStyle=rgba(T.muted,0.22); ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(W-R,y); ctx.stroke();
+    ctx.fillStyle=T.muted; ctx.textAlign='right'; ctx.textBaseline='middle'; ctx.fillText(e?'10'+sup(e):'1',L-6,y); }
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  for(const v of xs){ ctx.fillStyle=T.muted; ctx.fillText(xfmt(v),Xp(v),B+6); }
+  ctx.font=`12px ${T.font}`; ctx.fillText(xlab,L+(W-L-R)/2,B+20);
+  ctx.strokeStyle=rgba(T.muted,0.6); ctx.beginPath(); ctx.moveTo(L,Tp); ctx.lineTo(L,B); ctx.lineTo(W-R,B); ctx.stroke();
+  return {ctx,W,H,L,R,Tp,B,X:Xp,Y};
+}
+function path(ctx,pts){ ctx.beginPath(); pts.forEach((q,i)=> i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])); ctx.stroke(); }
+function drawRep(){
+  const r=REP.rows[+$('#a5').value], ds=REP.ds, tot=ds.map((d,k)=>r.lz[k]+r.lx[k]);
+  let km=0; tot.forEach((v,k)=>{ if(v<tot[km]) km=k; });
+  $('#a5v').textContent=`${r.n} photons`; $('#r-pz').textContent=sci(r.pz); $('#r-px').textContent=sci(r.px);
+  $('#r-d').textContent = km===0 ? `${ds[0]} (the shortest)` : ds[km]; $('#r-tot').textContent=sci(tot[km]);
+  const P=plotFrame($('#rep'),[3,7,11,15,19,23,27,31],0,-9,'Code size d (number of cat qubits)',String,d=>(d-1.5)/31);
+  if(!P) return; const {ctx,X,Y,L,R,Tp,B,W}=P;
+  ctx.save(); ctx.beginPath(); ctx.rect(L,Tp-1,W-L-R,B-Tp+1); ctx.clip();
+  const lo=1e-10, pt=(d,v)=>[X(d),Y(Math.max(v,lo))];
+  ctx.lineWidth=2; ctx.strokeStyle=T.neg; ctx.setLineDash([5,4]); path(ctx,ds.map((d,k)=>pt(d,r.lz[k]))); ctx.setLineDash([]);
+  ctx.strokeStyle=T.accent; path(ctx,ds.map((d,k)=>pt(d,r.lx[k])));
+  ctx.lineWidth=2.6; ctx.strokeStyle=T.ink; path(ctx,ds.map((d,k)=>pt(d,tot[k])));
+  for(const s of r.s){ ctx.beginPath(); ctx.arc(X(s[0]),Y(s[1]),4,0,TAU); ctx.fillStyle=T.neg; ctx.fill(); ctx.strokeStyle=T.stage; ctx.lineWidth=1.5; ctx.stroke(); }
+  ctx.restore();
+  const mx=X(ds[km]), my=Y(Math.max(tot[km],lo));
+  ctx.strokeStyle=rgba(T.ink,0.5); ctx.setLineDash([4,4]); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(mx,my); ctx.lineTo(mx,B); ctx.stroke(); ctx.setLineDash([]);
+  ctx.beginPath(); ctx.arc(mx,my,6,0,TAU); ctx.fillStyle=T.stage; ctx.fill(); ctx.strokeStyle=T.ink; ctx.lineWidth=2.4; ctx.stroke();
+  ctx.font=`600 12.5px ${T.font}`; ctx.fillStyle=T.ink; ctx.textBaseline='bottom';
+  ctx.textAlign = mx>W*0.7 ? 'right' : mx<W*0.3 ? 'left' : 'center';
+  ctx.fillText(`best: d = ${ds[km]}`, mx+(ctx.textAlign==='left'?8:ctx.textAlign==='right'?-8:0), my-10);
+}
+function drawSurf(){
+  const i=+$('#e5').value, c=SURF.css[i], x=SURF.xzzx[i], eta=SURF.etas[i];
+  $('#e5v').textContent=`η = ${eta}`; $('#s-css').textContent=sci(c[0]); $('#s-xzzx').textContent=sci(x[0]);
+  const ratio=c[0]/x[0]; $('#s-ratio').textContent = Math.abs(ratio-1)<0.05 ? 'about the same' : ratio>=1 ? `${ratio.toFixed(ratio<10?1:0)}× fewer errors` : `${(1/ratio).toFixed(1)}× more errors`;
+  const all=SURF.css.concat(SURF.xzzx).map(q=>q[0]), e0=Math.ceil(Math.log10(Math.max(...all))+0.05), e1=Math.floor(Math.log10(Math.min(...all))-0.05);
+  const lx0=Math.log10(0.35), lx1=Math.log10(1500);
+  const P=plotFrame($('#surf'),[1,10,100,1000],e0,e1,'Noise bias η',String,v=>(Math.log10(v)-lx0)/(lx1-lx0));
+  if(!P) return; const {ctx,X,Y,Tp,B}=P;
+  const sx=X(eta); ctx.strokeStyle=rgba(T.ink,0.5); ctx.setLineDash([4,4]); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(sx,Tp); ctx.lineTo(sx,B); ctx.stroke(); ctx.setLineDash([]);
+  [[SURF.css,T.muted,[5,4]],[SURF.xzzx,T.zero,[]]].forEach(([S,col,dash])=>{
+    ctx.strokeStyle=col; ctx.lineWidth=2.2; ctx.setLineDash(dash); path(ctx,S.map((q,k)=>[X(SURF.etas[k]),Y(q[0])])); ctx.setLineDash([]);
+    S.forEach((q,k)=>{ const px=X(SURF.etas[k]); ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(px,Y(q[0]+q[1])); ctx.lineTo(px,Y(Math.max(q[0]-q[1],q[0]*0.2))); ctx.stroke();
+      ctx.beginPath(); ctx.arc(px,Y(q[0]),k===i?5.5:3.5,0,TAU); ctx.fillStyle=col; ctx.fill(); ctx.strokeStyle=T.stage; ctx.lineWidth=1.5; ctx.stroke(); }); });
+}
+$('#a5').oninput=drawRep; $('#e5').oninput=drawSurf;
+
+/* ── notes reader ── */
+let pg=1;
+function showPage(){ $('#pg-img').src=`notes/page-${String(pg).padStart(2,'0')}.png`; $('#pg-img').alt=`Notes, page ${pg}`;
+  $('#pg-n').textContent=`Page ${pg} / ${NOTES_PAGES}`; $('#pg-prev').disabled=pg<=1; $('#pg-next').disabled=pg>=NOTES_PAGES; }
+$('#pg-prev').onclick=()=>{ if(pg>1){ pg--; showPage(); } };
+$('#pg-next').onclick=()=>{ if(pg<NOTES_PAGES){ pg++; showPage(); } };
+showPage();
+if(window.claude && window.claude.use){
+  window.claude.use('downloads').then(d=>{ if(!d) return; const b=$('#dl-pdf'); b.hidden=false;
+    b.onclick=async()=>{ const m=$('#dl-msg'); m.textContent='';
+      try{ const r=await fetch('cat-qubit-notes.pdf'); if(!r.ok) throw new Error('fetch'); await d.save({filename:'cat-qubit-notes.pdf',data:await r.blob()}); m.textContent='Saved.'; }
+      catch(e){ if(e && e.code==='declined') return; m.textContent='Download is not available here right now. You can still read the notes page by page above.'; } }; });
+} else { $('#dl-link').hidden=false; }
+
+/* ── main loop and theme changes ── */
+function redrawAll(){ readTheme(); drawMark(); S1.draw(); S2.draw(); drawWig(); drawFock(); drawTrade(); drawRep(); drawSurf(); }
+let last=performance.now(), tick=0;
+function frame(now){
+  const dt=Math.min(0.033,(now-last)/1000); last=now;
+  if(S1.visible){ S1.step(dt); S1.draw(); }
+  if(S2.visible){ S2.step(dt); S2.draw(); }
+  if(E3.leak && Math.random() < 0.4*E3.alpha*E3.alpha*dt) lose(true);
+  if(++tick%12===0){ ui1(); ui2(); }
+  requestAnimationFrame(frame);
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',redrawAll);
+new MutationObserver(redrawAll).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+addEventListener('resize',redrawAll);
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(redrawAll);
+
+scatter1(reduce?0:28); reset2(); ui1(); ui3('Even cat: in both valleys at once. Fringes in the middle, even photon numbers only.'); redrawAll();
+if(reduce){ for(let i=0;i<300;i++) S2.step(0.02); S2.flips=0; S2.t=0; }
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>
