@@ -166,7 +166,7 @@ footer{font-size:.82rem;color:var(--muted);border-top:1px solid var(--line);padd
 <!-- ───────── Experiment 2 ───────── -->
 <section id="exp2">
   <h2><span class="no">Experiment 2</span>Kick it and see if it flips</h2>
-  <div class="prose"><p>The real world is noisy, and noise keeps kicking the ball at random. If a ball hops from valley <span class="k0">0</span> into valley <span class="k1">1</span>, a stored 0 has become a 1. This error is called a <b>bit flip</b>. The 120 balls below all start in valley 0.</p></div>
+  <div class="prose"><p>Noise keeps kicking the state at random. If it gets pushed from valley <span class="k0">0</span> into valley <span class="k1">1</span>, a stored 0 has become a 1. This error is called a <b>bit flip</b>. As a quick cartoon, each ball below is one copy of the state; all 120 start in valley 0.</p></div>
   <div class="bench">
     <div class="stage"><canvas id="cv2" role="img" aria-label="120 balls jittering under noise, occasionally hopping to the other valley"></canvas><span class="cap">A flashing ring = one flip</span></div>
     <div class="panel">
@@ -192,17 +192,28 @@ footer{font-size:.82rem;color:var(--muted);border-top:1px solid var(--line);padd
         <button class="primary" id="reset2">Put all back in 0</button>
         <button id="kick2">Give a hard kick</button>
       </div>
-      <div class="status small">“Overlap” of the two valleys: <span class="m">e<sup>−2α²</sup></span> = <b class="num" id="ov2"></b><br>In theory, the bit-flip rate of a real cat qubit is proportional to this number.</div>
     </div>
   </div>
   <div class="take">
     <span class="tag">What you saw</span>
-    <p>The farther apart the valleys, the harder it is to hop across, and it gets harder exponentially. Ideally the bit-flip rate is proportional to <span class="m">e<sup>−2α²</sup></span>: each extra photon in the cavity cuts the rate by about a factor of seven.</p>
+    <p>The farther apart the valleys, the more rarely a ball hops across. The balls get the trend right but not the numbers, so here is the real picture.</p>
+  </div>
+
+  <h3 class="sub">The real picture</h3>
+  <div class="bench">
+    <figure class="stage chart"><canvas id="true2" role="img" aria-label="Cross-section of the landscape with the two quantum states as blobs of fixed width; their small overlap is shaded"></canvas>
+      <figcaption class="legend"><span><i style="background:var(--zero)"></i>State in valley 0</span><span><i style="background:var(--one)"></i>State in valley 1</span><span><i style="background:var(--ink)"></i>Overlap</span><span><i style="background:var(--muted)"></i>Landscape</span></figcaption></figure>
+    <div class="panel">
+      <p>The landscape is real. What the cartoon gets wrong is the state itself: it is not a point but a <b>blob</b>, and the size of the blob is fixed by quantum uncertainty. Making the cat bigger moves the two blobs apart; it does not make them smaller.</p>
+      <p>A bit flip can only happen through the part of one blob that already reaches the other valley. That part is the <b>overlap</b> of the two states, <span class="m">⟨−α|α⟩ = e<sup>−2α²</sup></span>, the dark sliver in the middle. Drag the cat size above and watch it shrink.</p>
+      <div class="tile"><div class="lab">Overlap <span class="m">e<sup>−2α²</sup></span></div><div class="val" id="ov2"></div></div>
+    </div>
+  </div>
+  <div class="take">
+    <span class="tag">So</span>
+    <p>The bit-flip rate of a cat qubit falls as <span class="m">e<sup>−2α²</sup></span>: each extra photon in the cavity cuts it by about a factor of seven. Section 5 of the notes has the derivation.</p>
     <p>This is not just theory. In experiments, cat qubits have gone more than ten seconds between bit flips, while ordinary superconducting qubits typically last less than a millisecond.</p>
   </div>
-  <details><summary>What the ball model leaves out</summary>
-    <p>A ball stands only for the “centre position” of the state, and the noise is simplified to a random push. It shows qualitatively that farther valleys are harder to cross, but the numbers should not be taken literally: in the ball model the flip rate falls even faster than the true law. The correct law <span class="m">e<sup>−2α²</sup></span> comes from the overlap of two quantum states; Section 5 of the notes has the derivation.</p>
-  </details>
 </section>
 
 <!-- ───────── Experiment 3 ───────── -->
@@ -226,6 +237,7 @@ footer{font-size:.82rem;color:var(--muted);border-top:1px solid var(--line);padd
         <button data-s="even" aria-pressed="true">Even cat (0 + 1)</button>
         <button data-s="odd" aria-pressed="false">Odd cat (0 − 1)</button>
       </div>
+      <button id="grow">Start from an empty cavity</button>
       <div class="field">
         <label for="a3"><span>Cat size (mean photon number <span class="m">α</span>²)</span><b id="a3v"></b></label>
         <input type="range" id="a3" min="1" max="2.4" step="0.05" value="1.6">
@@ -246,6 +258,18 @@ footer{font-size:.82rem;color:var(--muted);border-top:1px solid var(--line);padd
     <span class="tag">What you saw</span>
     <p>Lose one photon and the photon number goes from even to odd, and the fringes flip sign: the even cat has become the odd cat. This is the other kind of error, called a <b>phase flip</b>. A state that sits in a single valley shows no change. As with ordinary qubits, phase flips only hurt superpositions.</p>
     <p>Removing photons in pairs does not change the parity, so the two-photon process that “locks” the cat causes no trouble of its own. But the cavity always leaks photons by itself, and the more photons there are, the faster it leaks: the phase-flip rate is proportional to <span class="m">α</span>².</p>
+  </div>
+
+  <h3 class="sub">Where does a perfect 50/50 superposition come from?</h3>
+  <div class="prose">
+    <p>Press “Start from an empty cavity” above. In theory it takes three steps:</p>
+    <ol class="steps">
+      <li><b>Start empty.</b> Zero photons is an even number, and an empty cavity sits exactly at the centre, halfway between the two valleys.</li>
+      <li><b>Exchange photons in pairs.</b> A pair never changes whether the photon number is even or odd, so it stays even at every moment.</li>
+      <li><b>Only one place to land.</b> The two valleys hold exactly one state made of even photon numbers only: the even cat <span class="m">|α⟩ + |−α⟩</span>. That is where it must end.</li>
+    </ol>
+    <p>Nothing has to be fine-tuned: the 50/50 split and the + sign between the two halves are both forced by symmetry. Start from one photon instead and you get the odd cat. What can spoil the result is a single photon leaking out on the way, which turns + into −: a phase flip. The split itself stays safe, because changing it would take a bit flip. This is how cat states are prepared in the lab.</p>
+    <p class="small muted">In the animation only the end point and the even photon numbers are exact; the frames in between are a sketch.</p>
   </div>
 </section>
 
@@ -545,10 +569,28 @@ function ui2(){
   $('#n0').textContent=S2.ps.length-n1; $('#n1').textContent=n1; $('#nf').textContent=S2.flips;
   $('#rf').textContent = S2.t<3 ? '…' : (S2.flips/S2.t*10).toFixed(S2.flips/S2.t*10<10?1:0);
 }
-$('#a2').oninput=e=>{ S2.set({alpha:+e.target.value}); reset2(); };
+$('#a2').oninput=e=>{ S2.set({alpha:+e.target.value}); reset2(); drawTrue2(); };
 $('#d2').oninput=e=>{ S2.D=+e.target.value; reset2(); };
 $('#reset2').onclick=reset2;
 $('#kick2').onclick=()=>{ for(const p of S2.ps){ p.x+=0.9*gauss(); p.y+=0.9*gauss(); } };
+
+function drawTrue2(){
+  const f=fit($('#true2')); if(!f) return; const {ctx,W,H}=f; ctx.clearRect(0,0,W,H);
+  const a=S2.alpha, XR=3.8, L=14, R=14, Tp=16, B=H-30, X=x=>L+(W-L-R)*(x+XR)/(2*XR), Yb=v=>B-(B-Tp)*0.9*v;
+  const g=(x,c)=>Math.exp(-2*(x-c)*(x-c)), N=360, xs=[...Array(N+1)].map((_,i)=>-XR+2*XR*i/N);
+  const Umax=0.25*Math.pow(XR*XR-a*a,2), Uy=x=>B-(B-Tp)*Math.min(1,0.25*Math.pow(x*x-a*a,2)/(0.25*Math.pow(a,4)*2.2));
+  ctx.strokeStyle=rgba(T.muted,0.6); ctx.lineWidth=1.6; ctx.setLineDash([5,4]); ctx.beginPath(); xs.forEach((x,i)=>i?ctx.lineTo(X(x),Uy(x)):ctx.moveTo(X(x),Uy(x))); ctx.stroke(); ctx.setLineDash([]);
+  [[a,T.zero],[-a,T.one]].forEach(([c,col])=>{ ctx.beginPath(); ctx.moveTo(X(-XR),B); xs.forEach(x=>ctx.lineTo(X(x),Yb(g(x,c)))); ctx.lineTo(X(XR),B); ctx.closePath();
+    ctx.fillStyle=rgba(col,0.22); ctx.fill(); ctx.strokeStyle=col; ctx.lineWidth=2; ctx.beginPath(); xs.forEach((x,i)=>i?ctx.lineTo(X(x),Yb(g(x,c))):ctx.moveTo(X(x),Yb(g(x,c)))); ctx.stroke(); });
+  ctx.beginPath(); ctx.moveTo(X(-XR),B); xs.forEach(x=>ctx.lineTo(X(x),Yb(Math.min(g(x,a),g(x,-a))))); ctx.lineTo(X(XR),B); ctx.closePath(); ctx.fillStyle=T.ink; ctx.fill();
+  ctx.strokeStyle=rgba(T.muted,0.6); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(L,B); ctx.lineTo(W-R,B); ctx.stroke();
+  ctx.font=`600 12px ${T.mono}`; ctx.textAlign='center'; ctx.textBaseline='top';
+  ctx.fillStyle=T.zero; ctx.fillText('+α',X(a),B+6); ctx.fillStyle=T.one; ctx.fillText('−α',X(-a),B+6); ctx.fillStyle=T.muted; ctx.fillText('0',X(0),B+6);
+  const hw=0.5; ctx.strokeStyle=T.ink; ctx.lineWidth=1.2; const yy=Yb(Math.exp(-0.5))-0;
+  ctx.beginPath(); ctx.moveTo(X(a-hw),yy); ctx.lineTo(X(a+hw),yy); ctx.stroke();
+  ctx.font=`11.5px ${T.font}`; ctx.fillStyle=T.ink; ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillText('same width for every α', Math.min(X(a+hw)+6, W-R-140), yy);
+}
 
 /* ── experiment 3: Wigner function and photon-number distribution of |±α⟩ and the cat states ── */
 const E3={alpha:1.6,kind:'cat',sign:1,lost:0,leak:false};
@@ -592,12 +634,21 @@ function ui3(msg){
 function lose(quiet){ E3.lost++;
   if(E3.kind==='cat'){ E3.sign=-E3.sign; ui3(quiet?null:`Lost 1 photon: ${E3.sign===1?'the odd cat became the even cat':'the even cat became the odd cat'}. The fringes flipped sign and the photon-number parity changed. That is one phase flip.`); }
   else ui3(quiet?null:'Lost 1 photon: the blob has not moved. A state sitting in a single valley shows no sign of this error.'); }
-document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{ const s=b.dataset.s;
+document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{ stopGrow(); const s=b.dataset.s;
   E3.kind=(s==='zero'||s==='one')?'coh':'cat'; E3.sign=(s==='zero'||s==='even')?1:-1; E3.lost=0;
   ui3({zero:'The whole blob is in valley 0. No fringes; both even and odd photon numbers appear.',one:'The whole blob is in valley 1. No fringes; both even and odd photon numbers appear.',
        even:'Even cat: in both valleys at once. Fringes in the middle, even photon numbers only.',odd:'Odd cat: in both valleys at once. The fringes are the opposite of the even cat, odd photon numbers only.'}[s]); });
-$('#a3').oninput=e=>{ E3.alpha=+e.target.value; ui3(); };
-$('#lose1').onclick=()=>lose(false);
+let growId=0;
+function stopGrow(){ cancelAnimationFrame(growId); growId=0; }
+$('#a3').oninput=e=>{ stopGrow(); E3.alpha=+e.target.value; ui3(); };
+$('#grow').onclick=()=>{ stopGrow(); const target=+$('#a3').value, t0=performance.now(), dur=2800;
+  E3.kind='cat'; E3.sign=1; E3.lost=0; E3.leak=false; E3.alpha=0.03;
+  ui3('Empty cavity: zero photons, an even number. Now pairs start to flow in, and the photon number stays even at every moment.');
+  const step=now=>{ const u=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-u,3); E3.alpha=Math.max(0.03,target*e);
+    if(u<1){ ui3(); growId=requestAnimationFrame(step); }
+    else { E3.alpha=target; growId=0; ui3('It landed on the even cat: exactly half in each valley, with a + sign between them. Nothing was tuned; parity forced it.'); } };
+  growId=requestAnimationFrame(step); };
+$('#lose1').onclick=()=>{ stopGrow(); E3.alpha=+$('#a3').value; lose(false); };
 $('#lose2').onclick=()=>{ E3.lost+=2; ui3('Removed 1 pair of photons: nothing changed. The parity is untouched, which is why it is safe to lock the cat with a process that works in pairs.'); };
 $('#leak').onclick=()=>{ E3.leak=!E3.leak; ui3(E3.leak?'The cavity now leaks photons by itself, and every lost photon is one phase flip. Make the cat bigger and see how fast it leaks.':'Auto leak is off.'); };
 
@@ -694,7 +745,7 @@ if(window.claude && window.claude.use){
 } else { $('#dl-link').hidden=false; }
 
 /* ── main loop and theme changes ── */
-function redrawAll(){ readTheme(); drawMark(); S1.draw(); S2.draw(); drawWig(); drawFock(); drawTrade(); drawRep(); drawSurf(); }
+function redrawAll(){ readTheme(); drawMark(); S1.draw(); S2.draw(); drawWig(); drawFock(); drawTrue2(); drawTrade(); drawRep(); drawSurf(); }
 let last=performance.now(), tick=0;
 function frame(now){
   const dt=Math.min(0.033,(now-last)/1000); last=now;
